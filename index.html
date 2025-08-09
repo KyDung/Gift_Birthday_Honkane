@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- COVER_ENABLED = tên biến của bìa -->
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
@@ -18,8 +19,8 @@
         box-sizing: border-box;
       }
       #giftImg {
-        width: 40vw;
-        height: 40vw;
+        width: 50vw;
+        height: 50vw;
       }
       body {
         margin: 0;
@@ -245,13 +246,13 @@
         }
       }
 
-      /* === Nhân vật (ảnh của bạn có Cân Đẩu Vân) chạy sát chân trang === */
+      /* === Nhân vật chạy sát chân trang === */
       #nimbus {
         position: fixed;
         left: 0;
         bottom: 8px;
         height: 54px;
-        width: 64px; /* width cố định để luôn có offsetWidth */
+        width: 64px;
         pointer-events: none;
         z-index: 9;
       }
@@ -267,9 +268,98 @@
         transform-origin: center;
         transition: transform 0.15s;
       }
+
+      /* ====== COVER (thiếp mời đếm ngược) ====== */
+      #cover {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: none;
+        place-items: center;
+        background: radial-gradient(
+            1200px 600px at 50% 10%,
+            rgba(255, 210, 235, 0.45),
+            transparent 60%
+          ),
+          linear-gradient(#fff7fb, #ffeef7);
+      }
+      #cover.show {
+        display: grid;
+        animation: fade 0.35s ease;
+      }
+      .invite {
+        width: min(680px, 92vw);
+        background: #fff;
+        border-radius: 28px;
+        padding: 32px 26px;
+        text-align: center;
+        border: 1px solid #f4d3e4;
+        box-shadow: 0 20px 60px rgba(236, 72, 153, 0.22), inset 0 0 0 2px #fff;
+        position: relative;
+      }
+      .invite::after {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        border-radius: 30px;
+        background: conic-gradient(from 0deg, #ffd1e8, #f0abfc, #ffd1e8);
+        filter: blur(8px);
+        opacity: 0.25;
+        z-index: -1;
+      }
+      .invite h1 {
+        margin: 0 0 6px;
+        color: var(--accent);
+        font-size: clamp(28px, 4vw, 40px);
+        font-weight: 900;
+      }
+      .invite p {
+        margin: 4px 0 16px;
+        color: var(--muted);
+      }
+      .cd-row {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+      .cd-box {
+        min-width: 92px;
+        padding: 14px 10px;
+        border-radius: 16px;
+        background: #fff5fb;
+        border: 1px solid #f8d7eb;
+      }
+      .cd-box b {
+        display: block;
+        font-size: 28px;
+        line-height: 1;
+      }
+      .cd-box span {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .invite small {
+        display: block;
+        margin-top: 14px;
+        color: #94a3b8;
+      }
     </style>
   </head>
   <body>
+    <!-- COVER thiếp mời -->
+    <div id="cover" aria-hidden="true">
+      <div class="invite">
+        <h1>💌 Thiệp mừng sinh nhật</h1>
+        <p>Đếm ngược đến 16/08 – mở quà và vào bữa tiệc khi đến giờ 🎉</p>
+        <div id="coverCountdown" class="cd-row" aria-live="polite">
+          <!-- các ô thời gian sẽ render bằng JS -->
+        </div>
+        <small>(Trang web sẽ mở khi đến thời điểm)</small>
+      </div>
+    </div>
+
     <!-- Floating background hearts -->
     <div class="bg-hearts" aria-hidden="true" id="bgHearts"></div>
 
@@ -331,12 +421,14 @@
 
     <!-- Nhân vật của bạn (ảnh đã có Cân Đẩu Vân) -->
     <div id="nimbus">
-      <!-- Thay runner.png bằng ảnh của bạn -->
       <img id="runner" src="./me.png" alt="nhân vật trên mây" />
     </div>
 
     <script>
-      // ===== Questions & helpers =====
+      /* ========= CÔNG TẮC BÌA THIỆP MỜI ========= */
+      const COVER_ENABLED = true; // ← bật/tắt bìa (true: hiển thị đếm ngược; false: bỏ qua bìa để test nhanh)
+
+      /* ========= Quiz ========= */
       const QUESTIONS = [
         { q: "1) Bạn có yêu người tặng không?", answer: ["có", "co", "yes"] },
       ];
@@ -403,22 +495,97 @@
         showQ();
       };
 
-      // ===== Countdown to birthday 16/8 =====
-      function updateCountdown() {
+      /* ========= Countdown (hiển thị trong layout nhỏ – tùy thích) ========= */
+      function updateMiniCountdown() {
         const now = new Date();
-        const year =
-          now.getMonth() > 7 || (now.getMonth() === 7 && now.getDate() > 16)
-            ? now.getFullYear() + 1
-            : now.getFullYear();
-        const bday = new Date(year, 7, 16);
-        const diff = Math.ceil((bday - now) / (1000 * 60 * 60 * 24));
-        document.getElementById(
-          "countdown"
-        ).textContent = `Còn ${diff} ngày nữa tới sinh nhật bạn Honkane <3`;
+        const bday = getNextTarget(7, 16, 0, 0, 0); // 16/08
+        const diffDays = Math.ceil((bday - now) / (1000 * 60 * 60 * 24));
+        const mini = document.getElementById("countdown");
+        if (mini)
+          mini.textContent = `Còn ${diffDays} ngày nữa tới sinh nhật bạn Honkane <3`;
       }
-      updateCountdown();
 
-      // ===== Background hearts =====
+      /* ========= COVER logic (thiếp mời) ========= */
+      const cover = document.getElementById("cover");
+      const coverCountdown = document.getElementById("coverCountdown");
+      const quizScene = document.getElementById("quizScene");
+
+      // Lấy mốc tiếp theo (tháng 0-based)
+      function getNextTarget(m = 7, d = 16, hh = 0, mm = 0, ss = 0) {
+        const now = new Date();
+        let y = now.getFullYear();
+        let target = new Date(y, m, d, hh, mm, ss);
+        if (now > target) target = new Date(y + 1, m, d, hh, mm, ss);
+        return target;
+      }
+
+      function formatParts(ms) {
+        let s = Math.max(0, Math.floor(ms / 1000));
+        const days = Math.floor(s / 86400);
+        s %= 86400;
+        const hrs = Math.floor(s / 3600);
+        s %= 3600;
+        const mins = Math.floor(s / 60);
+        s %= 60;
+        const secs = s;
+        return { days, hrs, mins, secs };
+      }
+
+      function renderCoverCountdown(parts) {
+        coverCountdown.innerHTML = `
+          <div class="cd-box"><b>${parts.days}</b><span>Ngày</span></div>
+          <div class="cd-box"><b>${String(parts.hrs).padStart(
+            2,
+            "0"
+          )}</b><span>Giờ</span></div>
+          <div class="cd-box"><b>${String(parts.mins).padStart(
+            2,
+            "0"
+          )}</b><span>Phút</span></div>
+          <div class="cd-box"><b>${String(parts.secs).padStart(
+            2,
+            "0"
+          )}</b><span>Giây</span></div>
+        `;
+      }
+
+      function startCover() {
+        const target = getNextTarget(7, 16, 0, 0, 0); // 16/08 00:00:00
+        const now = new Date();
+
+        if (!COVER_ENABLED || now >= target) {
+          // Bỏ qua bìa hoặc đã tới ngày → vào thẳng web
+          cover.classList.remove("show");
+          cover.style.display = "none";
+          quizScene.style.display = "block";
+          showQ();
+          return;
+        }
+
+        // Hiện bìa thiếp mời đếm ngược
+        quizScene.style.display = "none";
+        cover.classList.add("show");
+
+        const tick = () => {
+          const n = new Date();
+          const diff = target - n;
+          if (diff <= 0) {
+            // Đến giờ → ẩn bìa, mở web
+            clearInterval(tid);
+            cover.classList.remove("show");
+            cover.style.display = "none";
+            quizScene.style.display = "block";
+            showQ();
+            burstConfetti(1500);
+          } else {
+            renderCoverCountdown(formatParts(diff));
+          }
+        };
+        tick();
+        const tid = setInterval(tick, 1000);
+      }
+
+      /* ========= Background hearts ========= */
       (function hearts() {
         const root = document.getElementById("bgHearts");
         const N = 28;
@@ -435,7 +602,7 @@
         }
       })();
 
-      // ===== Confetti =====
+      /* ========= Confetti ========= */
       function burstConfetti(duration = 1000) {
         const canvas = document.createElement("canvas");
         canvas.width = innerWidth;
@@ -478,18 +645,15 @@
         })(start);
       }
 
-      // ===== Nhân vật chạy: chỉ đổi vị trí qua lại, chờ ảnh load =====
+      /* ========= Nhân vật chạy ========= */
       const nimbus = document.getElementById("nimbus");
       const runner = document.getElementById("runner");
-      let x = 0;
-      let dir = 1;
+      let x = 0,
+        dir = 1;
       const speed = 0.8; // px/frame
-
       function startRunner() {
-        // đảm bảo container có width đúng (dựa theo ảnh) nhưng vẫn có fallback 64px
         const w = runner.getBoundingClientRect().width || 64;
         nimbus.style.width = Math.round(w) + "px";
-
         function step() {
           const maxX = window.innerWidth - nimbus.offsetWidth;
           x += speed * dir;
@@ -508,21 +672,18 @@
         }
         step();
       }
-
-      if (runner.complete) {
-        // Ảnh đã cache sẵn
-        startRunner();
-      } else {
+      if (runner.complete) startRunner();
+      else {
         runner.addEventListener("load", startRunner);
         runner.addEventListener("error", () => {
-          // vẫn chạy container để bạn thấy khung vị trí (nếu muốn, bỏ dòng dưới)
           nimbus.style.outline = "1px dashed #fda4af";
           startRunner();
         });
       }
 
-      showQ(); // start quiz
-      // hearts + countdown đã chạy ở trên
+      /* ========= Khởi động ========= */
+      updateMiniCountdown(); // mini text trong card (tuỳ thích)
+      startCover(); // bìa thiếp mời
     </script>
   </body>
 </html>
