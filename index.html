@@ -498,11 +498,22 @@
       /* ========= Countdown (hiển thị trong layout nhỏ – tùy thích) ========= */
       function updateMiniCountdown() {
         const now = new Date();
-        const bday = getNextTarget(7, 16, 0, 0, 0); // 16/08
-        const diffDays = Math.ceil((bday - now) / (1000 * 60 * 60 * 24));
+        // khoảng mở thiệp: 00:00 16/8 → 00:00 17/8 (tháng 7 = tháng 8)
+        const openStart = new Date(now.getFullYear(), 7, 16, 0, 0, 0);
+        const openEnd = new Date(now.getFullYear(), 7, 17, 0, 0, 0);
         const mini = document.getElementById("countdown");
-        if (mini)
-          mini.textContent = `Còn ${diffDays} ngày nữa tới sinh nhật bạn Honkane <3`;
+        if (!mini) return;
+
+        if (now >= openStart && now < openEnd) {
+          mini.textContent = "Hôm nay là sinh nhật! 🎂";
+          return;
+        }
+        const target =
+          now < openStart
+            ? openStart
+            : new Date(now.getFullYear() + 1, 7, 16, 0, 0, 0);
+        const diffDays = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+        mini.textContent = `Còn ${diffDays} ngày nữa tới sinh nhật bạn Honkane <3`;
       }
 
       /* ========= COVER logic (thiếp mời) ========= */
@@ -549,12 +560,14 @@
         `;
       }
 
+      // ✅ Sửa logic: mở trọn ngày 16/8, từ 17/8 đếm ngược tới năm sau
       function startCover() {
-        const target = getNextTarget(7, 16, 0, 0, 0); // 16/08 00:00:00
         const now = new Date();
+        const openStart = new Date(now.getFullYear(), 7, 16, 0, 0, 0);
+        const openEnd = new Date(now.getFullYear(), 7, 17, 0, 0, 0);
 
-        if (!COVER_ENABLED || now >= target) {
-          // Bỏ qua bìa hoặc đã tới ngày → vào thẳng web
+        // Nếu tắt bìa hoặc đang trong ngày 16/8 → vào thẳng web
+        if (!COVER_ENABLED || (now >= openStart && now < openEnd)) {
           cover.classList.remove("show");
           cover.style.display = "none";
           quizScene.style.display = "block";
@@ -562,7 +575,12 @@
           return;
         }
 
-        // Hiện bìa thiếp mời đếm ngược
+        // Ngoài ngày 16/8 → đếm ngược
+        const target =
+          now < openStart
+            ? openStart
+            : new Date(now.getFullYear() + 1, 7, 16, 0, 0, 0);
+
         quizScene.style.display = "none";
         cover.classList.add("show");
 
@@ -570,7 +588,6 @@
           const n = new Date();
           const diff = target - n;
           if (diff <= 0) {
-            // Đến giờ → ẩn bìa, mở web
             clearInterval(tid);
             cover.classList.remove("show");
             cover.style.display = "none";
